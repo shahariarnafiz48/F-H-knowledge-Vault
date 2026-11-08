@@ -1,0 +1,21 @@
+[Unit]
+Description=Fiber@Home Knowledge Vault
+After=network.target postgresql.service
+Requires=postgresql.service
+
+[Service]
+User=vault
+Group=vault
+WorkingDirectory=/srv/vault/backend
+EnvironmentFile=/etc/fhl-vault.env
+ExecStart=/srv/vault/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 2 --proxy-headers --forwarded-allow-ips=127.0.0.1
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/backups/fhl-vault
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,47 @@
+[
+ {
+  "id": "corp",
+  "name": "HR & Corporate Affairs",
+  "poc": "Mr. Mahmudul Hasan (HR)"
+ },
+ {
+  "id": "reg",
+  "name": "Regulatory & Compliance",
+  "poc": "Mr. Sharfuddin Bhuiyan Mehedi"
+ },
+ {
+  "id": "net",
+  "name": "Network Engineering (IP & DWDM)",
+  "poc": "Mr. Abdullah As Sadiq"
+ },
+ {
+  "id": "flow",
+  "name": "Internet & Data Flow (FGL / FHL / NTTN)",
+  "poc": "Mr. Mallik Samir Tawfik, Mr. Mezbah, Mr. Simon Borai"
+ },
+ {
+  "id": "biz",
+  "name": "Marketing & Business Development",
+  "poc": "Mr. Mallik Samir Tawfik; PICO (Mr. Ruslan); FIDC (Ms. Tarana)"
+ },
+ {
+  "id": "fin",
+  "name": "Finance & Accounts",
+  "poc": "To be assigned"
+ },
+ {
+  "id": "scm",
+  "name": "Supply Chain & Procurement",
+  "poc": "To be assigned"
+ },
+ {
+  "id": "it",
+  "name": "IT & Systems",
+  "poc": "To be assigned"
+ },
+ {
+  "id": "ops",
+  "name": "Operations & NOC",
+  "poc": "To be assigned"
+ }
+]

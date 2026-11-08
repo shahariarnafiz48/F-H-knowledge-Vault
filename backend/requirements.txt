@@ -1,0 +1,9 @@
+fastapi==0.162.1
+uvicorn[standard]
+psycopg[binary]
+psycopg-pool
+pydantic[email]
+argon2-cffi
+pyjwt[crypto]
+pytest
+httpx

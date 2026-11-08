@@ -1,0 +1,20 @@
+# secrets and local state - never commit
+.env
+*.env
+!deploy/.env.example
+*.pem
+*.key
+id_*
+backups/
+*.dump
+*.sha256
+# python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+# os / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

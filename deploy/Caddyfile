@@ -1,0 +1,6 @@
+# Replace vault.example.com with your address (setup_server.sh does this). Caddy fetches and renews the HTTPS certificate by itself.
+vault.example.com {
+	encode zstd gzip
+	header -Server
+	reverse_proxy 127.0.0.1:8000
+}
