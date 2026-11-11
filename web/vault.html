@@ -1238,6 +1238,8 @@ h1::after{background:var(--accent)}
 #login.kv .o-links .lk:disabled{color:#6B7078;cursor:default;font-weight:500}
 #login.kv #o-demo{margin:0 0 10px;font-size:12.5px;line-height:1.45}
 #login.kv #o-demo .dc{letter-spacing:.2em;font-size:15px;color:#CE242B}
+/* gate page (public sign-in): only the email-code method is offered */
+#login.kv[data-gate] .kv-tabs,#login.kv[data-gate] #pane-code{display:none!important}
 </style>
 
 <a class="skip" href="#main">Skip to main content</a>
@@ -1324,6 +1326,7 @@ const fmtDate = iso=>{try{return new Date(iso).toLocaleDateString('en-GB',{day:'
 
 /* ============================================================ state */
 const STANDALONE=true;
+const GATE=/*GATE*/false;     /* true only in the public sign-in page: same design, no company knowledge inside, email code only */
 const SERVER=true;   /* true only in the build the server hands out after a verified email-code sign-in */
 const S = {view:'overview', db:null, sample:null, user:null, downloads:null, canEdit:null, dbOk:false,
   upd:[], cov:{}, gaps:[], msgs:[], busy:false, ctl:null, scope:'all', searchOnly:false,
@@ -2149,7 +2152,7 @@ function drawUC(){
      <label class="field full"><span>Question or title <em class="req">Required</em></span><input type="text" id="f-title" data-req="Enter a question or title." aria-describedby="e-title" value="${esc(v.title||'')}" placeholder="Write it the way an employee would ask it, e.g. Who heads the Finance department?" ${dis}><small class="ferr" id="e-title" role="alert"></small></label>
      <label class="field full"><span>Answer or content <em class="req">Required</em></span><textarea id="f-body" data-req="Enter the answer or content." aria-describedby="e-body e-cnt" rows="7" placeholder="Write the full, precise answer. Include names, numbers and dates exactly." ${dis}>${esc(v.body||'')}</textarea><span class="fmeta"><small class="ferr" id="e-body" role="alert"></small><small id="e-cnt" class="fcnt">${(v.body||'').length} characters</small></span></label>
      <div class="full fsec" role="group" aria-labelledby="fs3"><h3 id="fs3"><i>3</i>Source and validity</h3><p>Who provided it, when it applies, and what it replaces.</p></div>
-     <label class="field"><span>Source or provided by</span><input type="text" id="f-src" value="${esc(v.src||'')}" placeholder="e.g. HR, Mr. Mahmudul Hasan, memo dated 12 Oct" ${dis}></label>
+     <label class="field"><span>Source or provided by</span><input type="text" id="f-src" value="${esc(v.src||'')}" placeholder="e.g. HR department, memo dated 12 Oct" ${dis}></label>
      <label class="field"><span>Effective date <small>optional</small></span><input type="date" id="f-eff" value="${esc(v.eff||'')}" ${dis}></label>
      <label class="field full"><span>Replaces or corrects <small>optional</small></span><input type="text" id="f-rep" value="${esc(v.rep||'')}" placeholder="e.g. The 60% foreign shareholding limit in the NTTN Architecture PDF" ${dis}></label>
      <div class="full row"><button class="btn primary" type="submit" ${dis}>${p?'Save changes':'Publish entry'}</button>${p?'<button class="btn" type="button" data-act="cancel-edit">Cancel</button>':''}<span class="muted" id="f-msg"></span></div></form>`;
@@ -2467,12 +2470,12 @@ function showLogin(){
   const finishLogin=(user,remember,btn)=>{if(btn){btn.classList.add('busy');btn.disabled=true}setTimeout(()=>{authSet(user,remember);S.me=user;renderNav();el.classList.add('out');const ap=document.querySelector('.app');if(ap)ap.inert=false;announce('Signed in as '+user.name);setTimeout(()=>{el.remove();const mn=$('#main');if(mn)mn.focus({preventScroll:true})},560)},650)};
   /* ---- sign-in method: email one-time code or access code */
   const API=(typeof window!=='undefined'&&window.FHL_API)||'';
-  const O={server:false,email:'',demo:null,ttl:10,resend:30,tm:null,busy:false,touched:false};
+  const O={server:GATE,email:'',demo:null,ttl:10,resend:30,tm:null,busy:false,touched:false};
   const EMAILRE=/^[^@\s]+@[^@\s]+\.[^@\s]+$/,oerr=m=>{$('#l-err').textContent=m?'Error: '+m:''};
   const boxes=[...el.querySelectorAll('.otpb')];
   const firstFocus=()=>{const p=el.querySelector('.pane:not([hidden])');const f=p&&[...p.querySelectorAll('input:not([type=checkbox])')].find(x=>x.offsetParent!==null);f&&f.focus()};
   const setTab=(t,focus)=>{el.dataset.tab=t;for(const k of ['otp','code']){const on=k===t;$('#tab-'+k).setAttribute('aria-selected',String(on));$('#tab-'+k).tabIndex=on?0:-1;$('#pane-'+k).hidden=!on}oerr('');el.querySelectorAll('input').forEach(x=>x.removeAttribute('aria-invalid'));if(focus)setTimeout(firstFocus,20)};
-  el.dataset.tab=STANDALONE?'code':'otp';
+  el.dataset.tab=(STANDALONE&&!GATE)?'code':'otp';if(GATE)el.dataset.gate='1';
   ['otp','code'].forEach(k=>{const b=$('#tab-'+k);b.addEventListener('click',()=>{O.touched=true;setTab(k,true)});b.addEventListener('keydown',e=>{if(e.key==='ArrowLeft'||e.key==='ArrowRight'||e.key==='Home'||e.key==='End'){e.preventDefault();O.touched=true;const n=k==='otp'?'code':'otp';setTab(n,false);$('#tab-'+n).focus()}})});
   const showStep=n=>{$('#o-s1').hidden=n!=='email';$('#o-s2').hidden=n!=='code';setTimeout(()=>{if(n==='email'){const f=$('#o-email');f&&f.focus()}else{const h=$('#o-h');h&&h.focus({preventScroll:true});boxes[0].focus()}},30)};
   const busy=(btn,on)=>{O.busy=on;btn.disabled=on;btn.classList.toggle('busy',on)};
@@ -2517,6 +2520,7 @@ function showLogin(){
         if(code!==d.code){d.tries++;fail('That code is incorrect. '+Math.max(0,5-d.tries)+' attempt'+(5-d.tries===1?'':'s')+' left.');return}
         user={email:O.email,name:nameFrom(O.email)};
       }
+      if(GATE){try{sessionStorage.setItem('fhl-csrf',window.FHL_CSRF||'')}catch(e){}btn.classList.add('busy');btn.querySelector('span').textContent='Signing in\u2026';location.replace('/');return}
       finishLogin(user,$('#o-rem').checked,btn);
     }catch(x){oerr('We could not reach the server. Check your connection and try again.')}
     finally{if(!user)busy(btn,false)}
@@ -2635,9 +2639,10 @@ const th=lsGet('fhl-theme'); if(th)document.documentElement.dataset.theme=th;
 rebuild(); loadChat();
 new MutationObserver(()=>{const m=$('#main');if(S.view!=='chat'&&m&&!m.querySelector('.foot'))m.insertAdjacentHTML('beforeend',FOOT)}).observe($('#main'),{childList:true});
 const hv=(location.hash||'').slice(1); if(['overview','chat','vault','coverage','update','map','insights'].includes(hv))S.view=hv;
-renderNav(); render();
+if(!GATE){renderNav(); render();}
 document.title=((NAV.find(n=>n[0]===S.view)||[])[1]||'Home')+' · Fiber@Home Knowledge Vault';
-if(SERVER){
+if(GATE){showLogin()}
+else if(SERVER){
   const bye=()=>{try{sessionStorage.removeItem('fhl-csrf')}catch(e){}location.replace('/')};
   const chk=()=>fetch('/api/auth/me',{credentials:'same-origin',cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject(r.status));
   chk().then(j=>{S.me={name:j.name,email:j.email,roles:j.roles};renderNav();render()}).catch(bye);

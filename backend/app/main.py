@@ -127,7 +127,7 @@ def otp_request(body: OtpRequest, request: Request, cx=Depends(get_db)):
                (u["id"], sec.otp_hash(u["id"], code), now + dt.timedelta(minutes=config.OTP_TTL_MINUTES)))
     try: mailer.send_code(u["email"], code, config.OTP_TTL_MINUTES); audit(cx, None, "otp.sent", "user", u["id"], request=request, email=body.email)
     except Exception as e:
-        audit(cx, None, "otp.send_failed", "user", u["id"], {"error": type(e).__name__}, request=request, email=body.email)
+        audit(cx, None, "otp.send_failed", "user", u["id"], {"error": type(e).__name__, "message": str(e)[:160]}, request=request, email=body.email)
     return generic
 
 @app.post("/api/auth/otp/verify", tags=["auth"])

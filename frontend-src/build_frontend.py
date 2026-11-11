@@ -17,6 +17,19 @@ t = re.sub(r"<!--THREE-->.*?<!--/THREE-->", lambda m: "<script>" + three + "</sc
 page = ('<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
         '<meta name="robots" content="noindex,nofollow"><style>:root{color-scheme:light}html,body{margin:0}</style></head><body>' + t + "</body></html>")
 OUT.mkdir(exist_ok=True); (OUT / "vault.html").write_text(page)
-lg = (H / "login.tpl.html").read_text().replace("__OUTFIT__", b64("outfit-latin.woff2")).replace("__LOGO__", b64("logo_p.png"))
+# public sign-in page = the SAME design (3D scene, tagline, card) built from the same template, with NO knowledge data inside
+g = (H / "template.html").read_text()
+g = (g.replace("/*AH*/0", "1").replace("__KB__", "[]").replace("__OUTFIT__", b64("outfit-latin.woff2"))
+      .replace("__LOGOP__", "data:image/png;base64," + b64("logo_p.png")).replace("__BD__", (A / "bd_main.json").read_text())
+      .replace("__LOGOD__", "data:image/png;base64," + b64("logo_d.png")).replace("__LOGO__", "data:image/png;base64," + b64("logo.png")))
+g = g.replace("/*GATE*/false", "true")
+# the public page must hold NO company knowledge: blank every embedded data block (contacts, roadmap topics, notes)
+for name in ("DEPTS", "P1", "P2", "P3", "NOTES"):
+    g, n = re.subn(r"const " + name + r" = \[.*?\n?\];", "const " + name + " = [];", g, count=1, flags=re.S); assert n == 1, name
+for bad in ("poc:'Mr.", "poc:'Ms.", "Mr. Mahmudul", "Sharfuddin", "Abdullah As Sadiq", "Mallik Samir", "NTTN foreign shareholding", "Q160", "Chapter 10.2", "BTRC publications"):
+    assert bad not in g, "company data would leak into the public sign-in page: " + bad
+g = re.sub(r"<!--THREE-->.*?<!--/THREE-->", lambda m: "<script>" + three + "</script>", g, flags=re.S)
+lg = ('<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+      '<meta name="robots" content="noindex,nofollow"><style>:root{color-scheme:light}html,body{margin:0}</style></head><body>' + g + "</body></html>")
 (OUT / "login.html").write_text(lg)
 print("vault.html", len(page), "| login.html", len(lg))

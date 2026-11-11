@@ -5,7 +5,11 @@ for k in ("OTP_PEPPER", "SMTP_HOST"): setattr(config, k, os.environ[k])
 config.OTP_ALLOWED_DOMAINS = ["t.io"]; config.OTP_RESEND_SECONDS = 0
 
 WEB = pathlib.Path(__file__).resolve().parents[2] / "web"
-SECRET = "BTRC"          # a term that exists only inside the knowledge base, never on the sign-in page
+import json
+_KB = json.load(open(WEB.parent / "frontend-src" / "kb.json"))
+BODIES = [e["b"][:60] for e in _KB if isinstance(e.get("b"), str) and len(e["b"]) > 60]
+SECRET = BODIES[0]       # real knowledge-base text: must be in the vault, never on the public sign-in page
+NAMES = ("Sharfuddin", "Mahmudul", "Abdullah As Sadiq", "Mallik Samir")   # people named in department contact data
 
 @pytest.fixture(autouse=True)
 def clean():
@@ -20,12 +24,13 @@ def sign_in(client, email="viewer_all@t.io"):
 def test_built_pages_exist_and_login_page_holds_no_knowledge():
     assert (WEB / "vault.html").exists() and (WEB / "login.html").exists()
     login = (WEB / "login.html").read_text(); vault = (WEB / "vault.html").read_text()
-    assert SECRET not in login and "const KB" not in login and len(login) < 400_000
-    assert SECRET in vault and "const SERVER=true" in vault
+    assert not [b for b in BODIES if b in login], "knowledge-base text leaked into the public sign-in page"
+    assert not [n for n in NAMES if n in login], "staff names leaked into the public sign-in page"
+    assert len(BODIES) > 300 and SECRET in vault and "const SERVER=true" in vault and "const GATE=true" in login and "const GATE=true" not in vault
 
 def test_public_address_shows_only_the_sign_in_page(client):
     r = client.get("/"); assert r.status_code == 200
-    assert "Send one-time code" in r.text and SECRET not in r.text and "const SERVER" not in r.text
+    assert "Send one-time code" in r.text and "const GATE=true" in r.text and SECRET not in r.text
     assert "no-store" in r.headers["cache-control"]
 
 def test_vault_is_sent_only_after_a_verified_code(client):
