@@ -1,4 +1,4 @@
-import smtplib, ssl, logging
+import smtplib, ssl, logging, json, os, re, urllib.request, urllib.error
 from email.message import EmailMessage
 from . import config
 log = logging.getLogger("fhl.mailer")
@@ -13,6 +13,9 @@ def send_code(to: str, code: str, minutes: int) -> None:
             f"<p style=\"font-size:13px;color:#4B525B\">It expires in {minutes} minutes and can be used once. If you did not try to sign in, you can ignore this email.</p></div>")
     if config.SMTP_HOST == "memory":
         OUTBOX.append({"to": to, "code": code, "subject": subject}); return
+    key = os.environ.get("BREVO_API_KEY", "").strip()
+    if key:
+        _brevo(key, to, subject, text, html); return
     m = EmailMessage(); m["From"] = config.SMTP_FROM; m["To"] = to; m["Subject"] = subject
     m.set_content(text); m.add_alternative(html, subtype="html")
     errors = []
@@ -42,3 +45,14 @@ def _deliver(m, host, port, sec):
     finally:
         try: s.quit()
         except Exception: pass
+
+
+def _brevo(key, to, subject, text, html):
+    """HTTPS delivery (works on Vercel, where outbound SMTP is cut off)."""
+    frm = config.SMTP_FROM; mt = re.match(r"\s*(.*?)\s*<([^>]+)>\s*$", frm)
+    sender = {"name": mt.group(1).strip("\"' ") or "Fiber@Home Knowledge Vault", "email": mt.group(2)} if mt else {"name": "Fiber@Home Knowledge Vault", "email": frm}
+    body = json.dumps({"sender": sender, "to": [{"email": to}], "subject": subject, "htmlContent": html, "textContent": text}).encode()
+    req = urllib.request.Request("https://api.brevo.com/v3/smtp/email", data=body, method="POST",
+        headers={"api-key": key, "content-type": "application/json", "accept": "application/json"})
+    try: urllib.request.urlopen(req, timeout=15).read()
+    except urllib.error.HTTPError as e: raise RuntimeError(f"brevo HTTP {e.code}: {e.read()[:200].decode('utf8','replace')}")
