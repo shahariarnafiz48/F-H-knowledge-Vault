@@ -15,11 +15,27 @@ def send_code(to: str, code: str, minutes: int) -> None:
         OUTBOX.append({"to": to, "code": code, "subject": subject}); return
     m = EmailMessage(); m["From"] = config.SMTP_FROM; m["To"] = to; m["Subject"] = subject
     m.set_content(text); m.add_alternative(html, subtype="html")
+    errors = []
+    for port, sec in _attempts():
+        try: _deliver(m, config.SMTP_HOST, port, sec); return
+        except Exception as e:
+            errors.append(f"{port}/{sec}: {type(e).__name__}: {str(e)[:70]}"); log.warning("mail attempt failed %s", errors[-1])
+    raise RuntimeError(" | ".join(errors))
+
+def _attempts() -> list:
+    """The configured port/mode first, then the other standard pairing (465 TLS-from-start, 587 STARTTLS) so one wrong dashboard value cannot block sign-in."""
+    first = (config.SMTP_PORT, config.SMTP_SECURITY); out = [first]
+    if config.SMTP_SECURITY != "none":
+        for alt in ((465, "ssl"), (587, "starttls")):
+            if alt not in out: out.append(alt)
+    return out
+
+def _deliver(m, host, port, sec):
     ctx = ssl.create_default_context()
-    if config.SMTP_SECURITY == "ssl": s = smtplib.SMTP_SSL(config.SMTP_HOST, config.SMTP_PORT, timeout=15, context=ctx)
+    if sec == "ssl": s = smtplib.SMTP_SSL(host, port, timeout=12, context=ctx)
     else:
-        s = smtplib.SMTP(config.SMTP_HOST, config.SMTP_PORT, timeout=15)
-        if config.SMTP_SECURITY == "starttls": s.starttls(context=ctx)
+        s = smtplib.SMTP(host, port, timeout=12)
+        if sec == "starttls": s.starttls(context=ctx)
     try:
         if config.SMTP_USER: s.login(config.SMTP_USER, config.SMTP_PASSWORD)
         s.send_message(m)
