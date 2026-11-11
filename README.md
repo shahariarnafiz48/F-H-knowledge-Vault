@@ -5,7 +5,7 @@ An internal knowledge platform for Fiber@Home Limited. Staff sign in with their 
 - **Sign-in:** email one-time code (6 digits, 10 minutes, single use, 5 attempts). The public address shows only the sign-in page; the vault itself is sent only after the code is verified.
 - **Vault:** Ask the Vault, department knowledge, 3D knowledge map, coverage roadmap, insights, Update Center.
 - **Back end:** Python FastAPI + PostgreSQL; secure cookies, CSRF protection, role-based access, tamper-evident audit log.
-- **Go live:** see **[DEPLOY.md](DEPLOY.md)** (Hostinger VPS, staff only).
+- **Go live:** free demo on Vercel + Neon: **[DEPLOY_VERCEL.md](DEPLOY_VERCEL.md)**. Permanent staff-only server (Hostinger VPS): **[DEPLOY.md](DEPLOY.md)**.
 - **Private repository.** It holds internal company content. Never make it public. Secrets live only on the server in `/etc/fhl-vault.env`.
 
 ```

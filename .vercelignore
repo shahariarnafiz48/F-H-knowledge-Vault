@@ -1,0 +1,7 @@
+backend/tests
+docs
+deploy
+frontend-src
+web/legacy
+scripts
+*.md

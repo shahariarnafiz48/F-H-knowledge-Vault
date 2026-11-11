@@ -23,8 +23,16 @@ async def security_headers(request: Request, call_next):
     return resp
 
 # ------------------------------------------------------------------ helpers
+def client_ip(request: Request):
+    """Real client address. X-Forwarded-For is trusted only when the app runs behind a platform proxy we control (Vercel / Caddy)."""
+    if config.TRUST_PROXY_HEADERS:
+        xf = request.headers.get("x-forwarded-for", "").split(",")[0].strip()
+        try: return str(ipaddress.ip_address(xf))
+        except ValueError: pass
+    return request.client.host if request.client else None
+
 def audit(cx, user, action, otype=None, oid=None, detail=None, request: Request | None = None, email=None):
-    ip = request.client.host if request and request.client else None
+    ip = client_ip(request) if request else None
     try: ipaddress.ip_address(ip or "")
     except ValueError: ip = None
     cx.execute("INSERT INTO audit_log(actor,actor_email,action,object_type,object_id,detail,ip) VALUES(%s,%s,%s,%s,%s,%s,%s)",
@@ -376,7 +384,8 @@ def health(cx=Depends(get_db)): cx.execute("SELECT 1"); return {"status": "ok"}
 # ------------------------------------------------------------------ static front end (registered last so /api routes win)
 import pathlib
 from fastapi.responses import FileResponse
-_WEB = pathlib.Path(__file__).resolve().parents[2] / "web"
+_WEB = next((c for c in (pathlib.Path(__file__).resolve().parents[2] / "web", pathlib.Path.cwd() / "web", pathlib.Path("/var/task/web")) if (c / "login.html").exists()),
+            pathlib.Path(__file__).resolve().parents[2] / "web")
 _NOSTORE = {"Cache-Control": "no-store, max-age=0"}
 @app.get("/", include_in_schema=False)
 def index(request: Request, cx=Depends(get_db)):

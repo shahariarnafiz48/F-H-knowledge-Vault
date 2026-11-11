@@ -2,6 +2,8 @@ import os
 DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://pgu@127.0.0.1/fhl")
 SESSION_ABSOLUTE_HOURS = int(os.environ.get("SESSION_ABSOLUTE_HOURS", "12"))
 SESSION_IDLE_MINUTES = int(os.environ.get("SESSION_IDLE_MINUTES", "30"))
+SERVERLESS = bool(os.environ.get("VERCEL"))                         # Vercel: no long-lived pool, trust the platform proxy header
+TRUST_PROXY_HEADERS = SERVERLESS or os.environ.get("TRUST_PROXY_HEADERS", "false").lower() == "true"
 COOKIE_SECURE = os.environ.get("COOKIE_SECURE", "true").lower() == "true"   # false only for local HTTP development
 MAX_FAILED_LOGINS = 5
 LOCKOUT_MINUTES = 15

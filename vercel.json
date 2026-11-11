@@ -1,0 +1,6 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "regions": ["sin1"],
+  "functions": { "api/index.py": { "includeFiles": "{backend,web}/**", "maxDuration": 30 } },
+  "rewrites": [ { "source": "/(.*)", "destination": "/api/index" } ]
+}
