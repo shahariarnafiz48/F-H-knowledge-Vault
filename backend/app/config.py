@@ -20,9 +20,15 @@ OTP_MAX_ATTEMPTS = int(os.environ.get("OTP_MAX_ATTEMPTS", "5"))
 OTP_RESEND_SECONDS = int(os.environ.get("OTP_RESEND_SECONDS", "30"))
 OTP_MAX_PER_HOUR = int(os.environ.get("OTP_MAX_PER_HOUR", "5"))
 OTP_ALLOWED_DOMAINS = [d.strip().lower() for d in os.environ.get("OTP_ALLOWED_DOMAINS", "fiberathome.net").split(",") if d.strip()]  # "*" = any
-SMTP_HOST = os.environ.get("SMTP_HOST", "")                          # "memory" is for automated tests only
-SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
-SMTP_USER = os.environ.get("SMTP_USER", ""); SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
-SMTP_FROM = os.environ.get("SMTP_FROM", "Fiber@Home Knowledge Vault <no-reply@fiberathome.net>")
-SMTP_SECURITY = os.environ.get("SMTP_SECURITY", "starttls")          # starttls | ssl | none
+def _env(name, default=""): return os.environ.get(name, default).strip()          # a stray space or newline pasted into a hosting dashboard must not break sign-in
+SMTP_HOST = _env("SMTP_HOST")                                        # "memory" is for automated tests only
+SMTP_PORT = int(_env("SMTP_PORT", "587") or "587")
+SMTP_USER = _env("SMTP_USER")
+SMTP_PASSWORD = _env("SMTP_PASSWORD")
+if SMTP_HOST.lower().endswith("gmail.com"): SMTP_PASSWORD = SMTP_PASSWORD.replace(" ", "")   # Google shows app passwords in groups of four with spaces
+SMTP_FROM = _env("SMTP_FROM", "Fiber@Home Knowledge Vault <no-reply@fiberathome.net>").strip("\"'")
+_sec = _env("SMTP_SECURITY").lower()
+SMTP_SECURITY = _sec if _sec in ("ssl", "starttls", "none") else ("ssl" if SMTP_PORT == 465 else "starttls")   # starttls | ssl | none (case-insensitive; inferred from the port when blank or unrecognised)
+if SMTP_PORT == 465 and SMTP_SECURITY == "starttls": SMTP_SECURITY = "ssl"          # the standard port decides when the two settings contradict each other
+if SMTP_PORT in (587, 2525) and SMTP_SECURITY == "ssl": SMTP_SECURITY = "starttls"
 def otp_enabled() -> bool: return bool(OTP_PEPPER and SMTP_HOST)
